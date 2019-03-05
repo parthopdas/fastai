@@ -160,11 +160,8 @@ def test_download_images():
     finally:
         shutil.rmtree(tmp_path)
 
-has_responses = 0
-try: import responses; has_responses = 1
-except: pass
-
-@pytest.mark.skipif(not has_responses, reason="requires the `responses` module")
+responses = try_import('responses')
+@pytest.mark.skipif(not responses, reason="requires the `responses` module")
 def test_trunc_download():
     this_tests(download_images)
     url = URLs.COCO_TINY

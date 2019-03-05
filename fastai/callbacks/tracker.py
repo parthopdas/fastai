@@ -81,8 +81,12 @@ class SaveModelCallback(TrackerCallback):
         if self.every not in ['improvement', 'epoch']:
             warn(f'SaveModel every {self.every} is invalid, falling back to "improvement".')
             self.every = 'improvement'
+                 
+    def jump_to_epoch(self, epoch:int)->None:
+        try: self.learn.load(f'{self.name}_{epoch-1}')
+        except: print(f'Model {self.name}_{epoch-1} not found.')
 
-    def on_epoch_end(self, epoch, **kwargs:Any)->None:
+    def on_epoch_end(self, epoch:int, **kwargs:Any)->None:
         "Compare the value monitored to its best score and maybe save the model."
         if self.every=="epoch": self.learn.save(f'{self.name}_{epoch}')
         else: #every="improvement"
@@ -128,17 +132,17 @@ class TrackEpochCallback(LearnerCallback):
     def __init__(self, learn:Learner, name:str='epoch', epoch_offset:int=None):
         "Store completed epoch number in `learn.model_dir/name`."
         super().__init__(learn)
+        learn._test_writeable_path()
         self.path = learn.path/learn.model_dir/name
         if epoch_offset is None:
             if os.path.isfile(self.path):
                  with self.path.open('r') as f:
-                     try:    epoch_offset = int(f.read())
-                     except: epoch_offset = 0
-            else: epoch_offset = 0
-        self.name,self.epoch_offset = name,epoch_offset
-                 
+                     try:    self.start_epoch = int(f.read())+1
+                     except: self.start_epoch = 0
+            else: self.start_epoch = 0
+                
     def on_train_begin(self, **kwargs:Any):
-        return {'epoch': self.epoch_offset}
+        return {'epoch': self.start_epoch}
 
     def on_epoch_end(self, epoch, **kwargs:Any)->None:
         with self.path.open('w') as f: f.write(f'{epoch}')
