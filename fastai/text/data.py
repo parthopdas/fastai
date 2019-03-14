@@ -135,8 +135,7 @@ def pad_collate(samples:BatchSamples, pad_idx:int=1, pad_first:bool=True, backwa
     for i,s in enumerate(samples):
         if pad_first: res[i,-len(s[0]):] = LongTensor(s[0])
         else:         res[i,:len(s[0]):] = LongTensor(s[0])
-    if backwards:
-        res = res.flip(1)
+    if backwards: res = res.flip(1)
     return res, tensor(np.array([s[1] for s in samples]))
 
 def _get_processor(tokenizer:Tokenizer=None, vocab:Vocab=None, chunksize:int=10000, max_vocab:int=60000,
@@ -328,8 +327,9 @@ class TextList(ItemList):
         return self.label_const(0, **kwargs)
 
     def reconstruct(self, t:Tensor):
-        idx = (t != self.pad_idx).nonzero().min()
-        return Text(t[idx:], self.vocab.textify(t[idx:]))
+        idx_min = (t != self.pad_idx).nonzero().min()
+        idx_max = (t != self.pad_idx).nonzero().max()
+        return Text(t[idx_min:idx_max], self.vocab.textify(t[idx_min:idx_max]))
 
     @classmethod
     def from_folder(cls, path:PathOrStr='.', extensions:Collection[str]=text_extensions, vocab:Vocab=None,
